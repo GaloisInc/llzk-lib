@@ -1,5 +1,5 @@
-The zkLean backend now lives under `backends/zklean/` and mirrors the layout of other
-backends (such as `r1cs`). The key files are:
+The zklean IR files live under `backends/zklean/` and mirrors the layout of
+other backends (such as `r1cs`). The key files are:
 
 ```
 backends
@@ -66,30 +66,11 @@ LLZK \<-\> ZKLean IR -\> ZKLean pipeline implemented and tested on LLZK circom i
 
 # Build Instructions:
 
-## Prerequisites:
+Please see the LLZK's [Setup and Development Page](https://project-llzk.github.io/llzk-lib/main/setup.html). Follow the Manual Build Setup and Development Workflow.
 
-LLZK requires:
-
-* CMake 3.18 or newer
-* Ninja
-* Z3 (NOTE: included bash script does **not** build LLVM with Z3 but is not necessary to run conversion / zklean pretty printing passes, see `build_deps.sh` to enable Z3 build)
-* Clang 16 or higher (use the same compiler for both LLVM and LLZK repos)
-
-To run tests, you also need:
-
-* Python 3
-* llvm-lit
-* gtest
-
-## Build:
-
-While standing in the top-level LLZK directory, do
-
-`bash build_deps.sh`
-
-This will build LLVM 20.1.8 in third-party/ and create a build/ directory, pointing LLZK at LLVM.
-
-**Warning:** this script will also do some strange sym linking in your home directory, see `build_deps.sh` for details.
+This will build LLVM 20.1.8 in third-party/ and create a build/ directory,
+pointing LLZK at LLVM. (NOTE: Z3 is included but not necessary to run
+conversion / zklean pretty printing passes.)
 
 # Usage:
 
