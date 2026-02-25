@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLZK_CONVERSIONS_PASSES_TD
-#define LLZK_CONVERSIONS_PASSES_TD
+#ifndef ZKLEAN_CONVERSION_PASSES_TD
+#define ZKLEAN_CONVERSION_PASSES_TD
 
 include "llzk/Pass/PassBase.td"
 
@@ -28,7 +28,7 @@ def ConvertLLZKToZKLeanPass
                            "llzk::zkexpr::ZKExprDialect",
                            "llzk::zkbuilder::ZKBuilderDialect",
                            "llzk::zkleanlean::ZKLeanLeanDialect"];
-  let constructor = "llzk::createConvertLLZKToZKLeanPass()";
+  let constructor = "zklean::createConvertLLZKToZKLeanPass()";
 }
 
 def ConvertZKLeanToLLZKPass
@@ -47,7 +47,7 @@ def ConvertZKLeanToLLZKPass
                            "llzk::zkexpr::ZKExprDialect",
                            "llzk::zkbuilder::ZKBuilderDialect",
                            "llzk::zkleanlean::ZKLeanLeanDialect"];
-  let constructor = "llzk::createConvertZKLeanToLLZKPass()";
+  let constructor = "zklean::createConvertZKLeanToLLZKPass()";
 }
 
-#endif // LLZK_CONVERSIONS_PASSES_TD
+#endif // ZKLEAN_CONVERSION_PASSES_TD

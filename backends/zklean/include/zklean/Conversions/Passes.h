@@ -11,12 +11,12 @@
 
 #include "mlir/Pass/Pass.h"
 
-namespace llzk {
+namespace zklean {
 
 std::unique_ptr<mlir::Pass> createConvertLLZKToZKLeanPass();
 std::unique_ptr<mlir::Pass> createConvertZKLeanToLLZKPass();
 
 #define GEN_PASS_REGISTRATION
-#include "zklean/Conversions/LLZKConversionPasses.h.inc"
+#include "zklean/Conversions/ConversionPasses.h.inc"
 
-} // namespace llzk
+} // namespace zklean

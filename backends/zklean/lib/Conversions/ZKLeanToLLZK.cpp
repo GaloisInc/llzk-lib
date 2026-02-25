@@ -47,11 +47,11 @@
 //   `FunctionConverter::convertOperation` before finalize emits the return.
 using namespace mlir;
 
-namespace llzk {
+namespace zklean {
 #define GEN_PASS_DECL_CONVERTZKLEANTOLLZKPASS
 #define GEN_PASS_DEF_CONVERTZKLEANTOLLZKPASS
-#include "zklean/Conversions/LLZKConversionPasses.h.inc"
-} // namespace llzk
+#include "zklean/Conversions/ZKLeanConversionPasses.h.inc"
+} // namespace zklean
 
 namespace {
 
@@ -641,7 +641,7 @@ static LogicalResult convertLeanModule(ModuleOp source, ModuleOp dest) {
 // Pass wrapper that appends a converted LLZK module to the source.
 // Delegates conversion details to `convertLeanModule`.
 class ConvertZKLeanToLLZKPass
-    : public llzk::impl::ConvertZKLeanToLLZKPassBase<ConvertZKLeanToLLZKPass> {
+    : public zklean::impl::ConvertZKLeanToLLZKPassBase<ConvertZKLeanToLLZKPass> {
 public:
   // Register dialects required for the lowered LLZK module.
   // Keeps the pass self-contained for `mlir::PassManager`.
@@ -683,7 +683,7 @@ public:
 
 } // namespace
 
-namespace llzk {
+namespace zklean {
 
 // Pass factory for `ConvertZKLeanToLLZKPass`.
 // Used by pass registration and external callers.
@@ -691,4 +691,4 @@ std::unique_ptr<Pass> createConvertZKLeanToLLZKPass() {
   return std::make_unique<ConvertZKLeanToLLZKPass>();
 }
 
-} // namespace llzk
+} // namespace zklean
