@@ -32,8 +32,9 @@ auto llzk::zkleanlean::StructDefOp::verifyRegions() -> mlir::LogicalResult {
 
   for (mlir::Operation &op : body.front()) {
     if (!mlir::isa<llzk::zkleanlean::MemberDefOp>(op)) {
-      op.emitOpError("only 'ZKLeanLean.member' ops are allowed in a 'ZKLeanLean.structure' body");
-      return mlir::failure();
+      return op.emitOpError()
+             << "only '" << MemberDefOp::getOperationName() << "' ops are allowed in a '"
+             << StructDefOp::getOperationName() << "' body";
     }
   }
 
