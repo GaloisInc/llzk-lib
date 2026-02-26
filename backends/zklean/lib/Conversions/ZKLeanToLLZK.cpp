@@ -228,19 +228,19 @@ static StructState *resolveStructState(
       if (it != structStates.end()) {
         structState = &it->second;
       } else {
-        func.emitError("missing struct.def for function self parameter");
+        func.emitError("missing struct.def for function self parameter").report();
         hadError = true;
         return nullptr;
       }
     }
   }
   if (nameStruct && typeStruct && *nameStruct != *typeStruct) {
-    func.emitError("struct name mismatch between function name and type");
+    func.emitError("struct name mismatch between function name and type").report();
     hadError = true;
     return nullptr;
   }
   if (nameStruct && !typeStruct) {
-    func.emitError("constrain name requires a struct-typed first argument");
+    func.emitError("constrain name requires a struct-typed first argument").report();
     hadError = true;
     return nullptr;
   }
@@ -315,7 +315,7 @@ struct FunctionConverter {
     if (auto blockArg = mlir::dyn_cast<BlockArgument>(v)) {
       return argMap.lookup(blockArg);
     }
-    userOp->emitError("unsupported value producer in ZKLean conversion");
+    userOp->emitError("unsupported value producer in ZKLean conversion").report();
     state.hadError = true;
     return Value();
   }
@@ -338,7 +338,7 @@ struct FunctionConverter {
     if (auto literal = dyn_cast<llzk::zkexpr::LiteralOp>(op)) {
       Value mapped = mapFelt(literal.getLiteral());
       if (!mapped) {
-        literal.emitError("unsupported literal source in ZKLean conversion");
+        literal.emitError("unsupported literal source in ZKLean conversion").report();
         state.hadError = true;
         return;
       }
@@ -359,19 +359,19 @@ struct FunctionConverter {
       if (calleeName.consume_front("bool.cmp_")) {
         auto predicate = parseCmpPredicate(calleeName);
         if (!predicate) {
-          call.emitError("unsupported bool.cmp predicate in ZKLean conversion");
+          call.emitError("unsupported bool.cmp predicate in ZKLean conversion").report();
           state.hadError = true;
           return;
         }
         if (call.getNumOperands() != 2 || call.getNumResults() != 1) {
-          call.emitError("bool.cmp expects two operands and one result");
+          call.emitError("bool.cmp expects two operands and one result").report();
           state.hadError = true;
           return;
         }
         Value lhs = mapZK(call.getOperand(0));
         Value rhs = mapZK(call.getOperand(1));
         if (!lhs || !rhs) {
-          call.emitError("unsupported bool.cmp operands in ZKLean conversion");
+          call.emitError("unsupported bool.cmp operands in ZKLean conversion").report();
           state.hadError = true;
           return;
         }
@@ -385,7 +385,7 @@ struct FunctionConverter {
       }
       if (calleeName == "cast.tofelt") {
         if (call.getNumOperands() != 1 || call.getNumResults() != 1) {
-          call.emitError("cast.tofelt expects one operand and one result");
+          call.emitError("cast.tofelt expects one operand and one result").report();
           state.hadError = true;
           return;
         }
@@ -400,7 +400,7 @@ struct FunctionConverter {
         zkToFeltMap[call.getResult(0)] = castOp.getResult();
         return;
       }
-      call.emitError("unsupported ZKLeanLean call in ZKLean conversion");
+      call.emitError("unsupported ZKLeanLean call in ZKLean conversion").report();
       state.hadError = true;
       return;
     }
@@ -409,7 +409,7 @@ struct FunctionConverter {
     if (auto accessor = dyn_cast<llzk::zkleanlean::AccessorOp>(op)) {
       Value component = argMap.lookup(accessor.getComponent());
       if (!component) {
-        accessor.emitError("unsupported struct source in ZKLean conversion");
+        accessor.emitError("unsupported struct source in ZKLean conversion").report();
         state.hadError = true;
         return;
       }
@@ -428,7 +428,7 @@ struct FunctionConverter {
       Value lhs = mapZK(add.getLhs());
       Value rhs = mapZK(add.getRhs());
       if (!lhs || !rhs) {
-        add.emitError("missing ZKExpr operands in ZKLean conversion");
+        add.emitError("missing ZKExpr operands in ZKLean conversion").report();
         state.hadError = true;
         return;
       }
@@ -444,7 +444,7 @@ struct FunctionConverter {
       Value lhs = mapZK(sub.getLhs());
       Value rhs = mapZK(sub.getRhs());
       if (!lhs || !rhs) {
-        sub.emitError("missing ZKExpr operands in ZKLean conversion");
+        sub.emitError("missing ZKExpr operands in ZKLean conversion").report();
         state.hadError = true;
         return;
       }
@@ -460,7 +460,7 @@ struct FunctionConverter {
       Value lhs = mapZK(mul.getLhs());
       Value rhs = mapZK(mul.getRhs());
       if (!lhs || !rhs) {
-        mul.emitError("missing ZKExpr operands in ZKLean conversion");
+        mul.emitError("missing ZKExpr operands in ZKLean conversion").report();
         state.hadError = true;
         return;
       }
@@ -475,7 +475,7 @@ struct FunctionConverter {
     if (auto neg = dyn_cast<llzk::zkexpr::NegOp>(op)) {
       Value operand = mapZK(neg.getValue());
       if (!operand) {
-        neg.emitError("missing ZKExpr operand in ZKLean conversion");
+        neg.emitError("missing ZKExpr operand in ZKLean conversion").report();
         state.hadError = true;
         return;
       }
@@ -491,7 +491,7 @@ struct FunctionConverter {
       Value lhs = mapZK(constraint.getLhs());
       Value rhs = mapZK(constraint.getRhs());
       if (!lhs || !rhs) {
-        constraint.emitError("missing ZKExpr operands in ZKLean conversion");
+        constraint.emitError("missing ZKExpr operands in ZKLean conversion").report();
         state.hadError = true;
         return;
       }
@@ -502,7 +502,7 @@ struct FunctionConverter {
     }
 
     if (op->getNumResults() != 0) {
-      op->emitError("unsupported ZKLean operation in conversion");
+      op->emitError("unsupported ZKLean operation in conversion").report();
       state.hadError = true;
     }
   }
@@ -526,7 +526,7 @@ static llzk::function::FuncDefOp createTargetFunction(
   llzk::function::FuncDefOp newFunc;
   if (structState) {
     if (structState->hasConstrain) {
-      func.emitError("duplicate constrain function for struct");
+      func.emitError("duplicate constrain function for struct").report();
       state.hadError = true;
       return llzk::function::FuncDefOp();
     }
@@ -655,7 +655,7 @@ public:
     }
 
     if (failed(convertLeanModule(source, llzkModule))) {
-      source.emitError("failed to convert ZKLean module");
+      source.emitError("failed to convert ZKLean module").report();
       signalPassFailure();
       return;
     }
