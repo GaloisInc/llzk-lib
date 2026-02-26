@@ -278,19 +278,15 @@ static std::optional<std::string> formatLeanStatement(
       nextValueId += op.getNumResults();
       return std::nullopt;
     }
-    if (auto constOp = litValue.getDefiningOp<llzk::felt::FeltConstantOp>()) {
-      auto resultNames = assignResultNames(op, valueNames, nextValueId);
-      std::string line = "  let ";
-      line.append(wrapResultNames(resultNames));
-      line.append(" := ");
-      line.append(formatFeltConstant(constOp));
-      return line;
-    }
     auto resultNames = assignResultNames(op, valueNames, nextValueId);
     std::string line = "  let ";
     line.append(wrapResultNames(resultNames));
     line.append(" := ");
-    line.append(lookupValueName(litValue, valueNames));
+    if (auto constOp = litValue.getDefiningOp<llzk::felt::FeltConstantOp>()) {
+      line.append(formatFeltConstant(constOp));
+    } else {
+      line.append(lookupValueName(litValue, valueNames));
+    }
     return line;
   }
 
@@ -460,9 +456,6 @@ emitLeanFunc(FuncOpTy func, raw_ostream &os, const llvm::DenseSet<StringRef> &st
   llvm::SmallVector<std::string, 16> statements;
 
   for (Operation &op : entry) {
-    if (isa<func::ReturnOp>(op)) {
-      continue;
-    }
     if (!isZkDialect(&op)) {
       continue;
     }
