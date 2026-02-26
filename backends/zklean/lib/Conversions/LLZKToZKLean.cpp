@@ -204,15 +204,15 @@ struct FunctionConverter {
     auto newArg = argMapping.lookup(v);
     if (!newArg) {
       if (auto *def = v.getDefiningOp()) {
-        def->emitError("unsupported value producer for ZKLean conversion");
+        def->emitError("unsupported value producer for ZKLean conversion").report();
       } else {
-        userOp->emitError("unsupported block argument for ZKLean conversion");
+        userOp->emitError("unsupported block argument for ZKLean conversion").report();
       }
       state.hadError = true;
       return Value();
     }
     if (mlir::isa<llzk::zkleanlean::StructType>(newArg.getType())) {
-      userOp->emitError("struct values must be accessed via zkleanlean.accessor");
+      userOp->emitError("struct values must be accessed via zkleanlean.accessor").report();
       state.hadError = true;
       return Value();
     }
@@ -351,7 +351,7 @@ struct FunctionConverter {
       state.builder.setInsertionPointToEnd(newBlock);
       Value component = argMapping.lookup(read.getComponent());
       if (!component) {
-        read.emitError("unsupported struct source in ZKLean conversion");
+        read.emitError("unsupported struct source in ZKLean conversion").report();
         state.hadError = true;
         return;
       }
@@ -375,7 +375,7 @@ struct FunctionConverter {
       return;
     }
     if (op->getNumResults() != 0) {
-      op->emitError("unsupported op in ZKLean conversion");
+      op->emitError("unsupported op in ZKLean conversion").report();
       state.hadError = true;
     }
   }
@@ -447,7 +447,7 @@ public:
     }
 
     if (failed(convertModule(original, zkLeanModule))) {
-      original.emitError("failed to produce ZKLean module");
+      original.emitError("failed to produce ZKLean module").report();
       signalPassFailure();
       return;
     }
