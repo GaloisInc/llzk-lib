@@ -50,7 +50,7 @@ using namespace mlir;
 namespace zklean {
 #define GEN_PASS_DECL_CONVERTZKLEANTOLLZKPASS
 #define GEN_PASS_DEF_CONVERTZKLEANTOLLZKPASS
-#include "zklean/Conversions/ZKLeanConversionPasses.h.inc"
+#include "zklean/Conversions/ConversionPasses.h.inc"
 } // namespace zklean
 
 namespace {

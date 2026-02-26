@@ -47,7 +47,7 @@ using namespace mlir;
 namespace zklean {
 #define GEN_PASS_DECL_CONVERTLLZKTOZKLEANPASS
 #define GEN_PASS_DEF_CONVERTLLZKTOZKLEANPASS
-#include "zklean/Conversions/ZKLeanConversionPasses.h.inc"
+#include "zklean/Conversions/ConversionPasses.h.inc"
 } // namespace zklean
 
 namespace {
@@ -434,21 +434,14 @@ static LogicalResult convertModule(ModuleOp source, ModuleOp dest) {
 class ConvertLLZKToZKLeanPass
     : public zklean::impl::ConvertLLZKToZKLeanPassBase<ConvertLLZKToZKLeanPass> {
 public:
-  // Register dialects needed by the generated ZKLean IR.
-  // Keeps the pass self-contained for `mlir::PassManager`.
-  void getDependentDialects(mlir::DialectRegistry &registry) const override {
-    registry.insert<
-        llzk::boolean::BoolDialect, llzk::cast::CastDialect, mlir::func::FuncDialect,
-        llzk::zkexpr::ZKExprDialect, llzk::zkbuilder::ZKBuilderDialect,
-        llzk::zkleanlean::ZKLeanLeanDialect>();
-  }
 
   // Replace the current `ModuleOp` with a ZKLean module.
   // Emits a new ModuleOp when possible; otherwise rewrites in-place.
   void runOnOperation() override {
+    auto *ctx = &getContext();
     ModuleOp original = getOperation();
     ModuleOp zkLeanModule = ModuleOp::create(original.getLoc());
-    auto symName = StringAttr::get(&getContext(), "ZKLean");
+    auto symName = StringAttr::get(ctx, "ZKLean");
     zkLeanModule->setAttr(SymbolTable::getSymbolAttrName(), symName);
     if (auto lang = original->getAttr(llzk::LANG_ATTR_NAME)) {
       zkLeanModule->setAttr(llzk::LANG_ATTR_NAME, lang);

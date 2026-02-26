@@ -23,7 +23,10 @@ def ConvertLLZKToZKLeanPass
     constraints to ZKBuilder.ConstrainEq, struct member reads to ZKLeanLean.accessor, and
     maps bool.cmp/cast.tofelt into ZKLeanLean.call to stub functions.
   }];
-  let dependentDialects = ["llzk::felt::FeltDialect",
+  let dependentDialects = ["llzk::boolean::BoolDialect",
+                           "llzk::cast::CastDialect",
+                           "mlir::func::FuncDialect",
+                           "llzk::felt::FeltDialect",
                            "llzk::constrain::ConstrainDialect",
                            "llzk::zkexpr::ZKExprDialect",
                            "llzk::zkbuilder::ZKBuilderDialect",
