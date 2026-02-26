@@ -64,19 +64,12 @@ static bool isBuilderOp(Operation *op) {
 
 // Build a Lean-friendly name for `llzk::function::FuncDefOp`.
 // Flattens nested symbol references into a single identifier using "__".
-[[maybe_unused]] static std::string buildLeanFunctionName(llzk::function::FuncDefOp func) {
-  std::string name;
-  auto fq = func.getFullyQualifiedName(false);
-  if (!fq) {
-    return func.getSymName().str();
-  }
+static std::string formatLeanCallee(SymbolRefAttr callee);
 
-  name = fq.getRootReference().str();
-  for (SymbolRefAttr nested : fq.getNestedReferences()) {
-    name.append("__");
-    name.append(nested.getLeafReference().str());
-  }
-  return name;
+[[maybe_unused]] static std::string buildLeanFunctionName(llzk::function::FuncDefOp func) {
+  if (auto fq = func.getFullyQualifiedName(false))
+    return formatLeanCallee(fq);
+  return func.getSymName().str();
 }
 
 // Extract a struct name from ZKLean struct types.
