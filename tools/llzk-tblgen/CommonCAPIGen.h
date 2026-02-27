@@ -262,7 +262,7 @@ struct ExtraMethod {
   std::string returnType;
   /// The name of the method
   std::string methodName;
-  /// Documentation comment (if any)
+  /// Properly escaped documentation comment (if any)
   std::string documentation;
   /// Whether the method is const-qualified
   bool isConst = false;
@@ -329,8 +329,8 @@ struct Generator {
   /// @param d Pointer to the dialect definition
   /// @param cppClassName The C++ class name of the entity being generated
   virtual void
-  setDialectAndClassName(const mlir::tblgen::Dialect *d, mlir::StringRef cppClassName) {
-    this->dialect = d;
+  setNamespaceAndClassName(const mlir::tblgen::Dialect &d, mlir::StringRef cppClassName) {
+    this->dialectNamespace = d.getCppNamespace();
     this->className = cppClassName;
   }
 
@@ -353,7 +353,7 @@ protected:
   std::string kind;
   llvm::raw_ostream &os;
   std::string dialectNameCapitalized;
-  const mlir::tblgen::Dialect *dialect;
+  mlir::StringRef dialectNamespace;
   mlir::StringRef className;
 };
 
@@ -383,17 +383,17 @@ extern "C" {
 
   virtual void genIsADecl() const {
     static constexpr char fmt[] = R"(
-/* Returns true if the {1} is a {4}::{3}. */
+/// Returns true if the {1} is a {4}::{3}.
 MLIR_CAPI_EXPORTED bool {0}{1}IsA_{2}_{3}(Mlir{1});
 )";
-    assert(dialect && "Dialect must be set");
+    assert(!dialectNamespace.empty() && "Dialect must be set");
     os << llvm::formatv(
         fmt,
-        FunctionPrefix,            // {0}
-        kind,                      // {1}
-        dialectNameCapitalized,    // {2}
-        className,                 // {3}
-        dialect->getCppNamespace() // {4}
+        FunctionPrefix,         // {0}
+        kind,                   // {1}
+        dialectNameCapitalized, // {2}
+        className,              // {3}
+        dialectNamespace        // {4}
     );
   }
 
@@ -423,10 +423,11 @@ MLIR_CAPI_EXPORTED bool {0}{1}IsA_{2}_{3}(Mlir{1});
     }
 
     // Generate declaration
-    std::string docComment =
-        method.documentation.empty() ? method.methodName : method.documentation;
-
-    os << llvm::formatv("\n/* {0} */\n", docComment);
+    if (method.documentation.empty()) {
+      os << llvm::formatv("\n/// {0}\n", method.methodName);
+    } else {
+      os << llvm::formatv("\n{0}\n", method.documentation);
+    }
     os << llvm::formatv(
         "MLIR_CAPI_EXPORTED {0} {1}{2}_{3}{4}({5});\n",
         capiReturnType,                  // {0}
@@ -570,7 +571,7 @@ struct TestGenerator : public Generator {
   /// @brief Generate IsA test for a class
   virtual void genIsATest() const {
     static constexpr char fmt[] = R"(
-// This test ensures {0}{1}IsA_{2}_{3} links properly.
+/// This test ensures {0}{1}IsA_{2}_{3} links properly.
 TEST_F({2}{1}LinkTests, IsA_{2}_{3}) {{
   auto test{1} = createIndex{1}();
 
@@ -638,7 +639,7 @@ TEST_F({2}{1}LinkTests, IsA_{2}_{3}) {{
     }
 
     static constexpr char fmt[] = R"(
-// This test ensures {0}{2}_{3}{4} links properly.
+/// This test ensures {0}{2}_{3}{4} links properly.
 TEST_F({2}{1}LinkTests, {0}_{3}_{4}) {{
   auto test{1} = createIndex{1}();
 

@@ -35,10 +35,10 @@ struct AttrOrTypeHeaderGenerator : public HeaderGenerator {
   /// @brief Generate regular getter for non-ArrayRef type parameter
   virtual void genParameterGetterDecl(mlir::StringRef cppType) const {
     static constexpr char fmt[] = R"(
-/* Get '{5}' parameter from a {6}::{3} {1}. */
+/// Get '{5}' parameter from a {6}::{3} {1}.
 MLIR_CAPI_EXPORTED {7} {0}{2}_{3}Get{4}(Mlir{1});
 )";
-    assert(dialect && "Dialect must be set");
+    assert(!dialectNamespace.empty() && "Dialect must be set");
     assert(!paramName.empty() && "paramName must be set");
     os << llvm::formatv(
         fmt,
@@ -48,7 +48,7 @@ MLIR_CAPI_EXPORTED {7} {0}{2}_{3}Get{4}(Mlir{1});
         className,                    // {3}
         paramNameCapitalized,         // {4}
         paramName,                    // {5}
-        dialect->getCppNamespace(),   // {6}
+        dialectNamespace,             // {6}
         mapCppTypeToCapiType(cppType) // {7}
     );
   }
@@ -56,13 +56,13 @@ MLIR_CAPI_EXPORTED {7} {0}{2}_{3}Get{4}(Mlir{1});
   /// @brief Generate accessor function for ArrayRef parameter elements
   virtual void genArrayRefParameterGetterDecls(mlir::StringRef cppType) const {
     static constexpr char fmt[] = R"(
-/* Get count of '{5}' parameter from a {6}::{3} {1}. */
+/// Get count of '{5}' parameter from a {6}::{3} {1}.
 MLIR_CAPI_EXPORTED intptr_t {0}{2}_{3}Get{4}Count(Mlir{1});
 
-/* Get element at index from '{5}' parameter from a {6}::{3} {1}. */
+/// Get element at index from '{5}' parameter from a {6}::{3} {1}.
 MLIR_CAPI_EXPORTED {7} {0}{2}_{3}Get{4}At(Mlir{1}, intptr_t pos);
 )";
-    assert(dialect && "Dialect must be set");
+    assert(!dialectNamespace.empty() && "Dialect must be set");
     assert(!paramName.empty() && "paramName must be set");
     mlir::StringRef cppElemType = extractArrayRefElementType(cppType);
     os << llvm::formatv(
@@ -73,7 +73,7 @@ MLIR_CAPI_EXPORTED {7} {0}{2}_{3}Get{4}At(Mlir{1}, intptr_t pos);
         className,                        // {3}
         paramNameCapitalized,             // {4}
         paramName,                        // {5}
-        dialect->getCppNamespace(),       // {6}
+        dialectNamespace,                 // {6}
         mapCppTypeToCapiType(cppElemType) // {7}
     );
   }
@@ -81,10 +81,10 @@ MLIR_CAPI_EXPORTED {7} {0}{2}_{3}Get{4}At(Mlir{1}, intptr_t pos);
   /// @brief Generate default Get builder declaration
   virtual void genDefaultGetBuilderDecl(const mlir::tblgen::AttrOrTypeDef &def) const {
     static constexpr char fmt[] = R"(
-/* Create a {5}::{3} {1} with the given parameters. */
+/// Create a {5}::{3} {1} with the given parameters.
 MLIR_CAPI_EXPORTED Mlir{1} {0}{2}_{3}Get(MlirContext ctx{4});
 )";
-    assert(dialect && "Dialect must be set");
+    assert(!dialectNamespace.empty() && "Dialect must be set");
 
     // Use raw_string_ostream for efficient string building of parameter list
     std::string paramListBuffer;
@@ -95,7 +95,7 @@ MLIR_CAPI_EXPORTED Mlir{1} {0}{2}_{3}Get(MlirContext ctx{4});
         // For ArrayRef parameters, use intptr_t for count and pointer to element type
         mlir::StringRef cppElemType = extractArrayRefElementType(cppType);
         paramListStream << ", intptr_t " << param.getName() << "Count, "
-                        << mapCppTypeToCapiType(cppElemType) << " *" << param.getName();
+                        << mapCppTypeToCapiType(cppElemType) << " const *" << param.getName();
       } else {
         paramListStream << ", " << mapCppTypeToCapiType(cppType) << ' ' << param.getName();
       }
@@ -103,24 +103,24 @@ MLIR_CAPI_EXPORTED Mlir{1} {0}{2}_{3}Get(MlirContext ctx{4});
 
     os << llvm::formatv(
         fmt,
-        FunctionPrefix,            // {0}
-        kind,                      // {1}
-        dialectNameCapitalized,    // {2}
-        className,                 // {3}
-        paramListBuffer,           // {4}
-        dialect->getCppNamespace() // {5}
+        FunctionPrefix,         // {0}
+        kind,                   // {1}
+        dialectNameCapitalized, // {2}
+        className,              // {3}
+        paramListBuffer,        // {4}
+        dialectNamespace        // {5}
     );
   }
 
-  void genCompleteRecord(const mlir::tblgen::AttrOrTypeDef def) {
-    const mlir::tblgen::Dialect &defDialect = def.getDialect();
+  void genCompleteRecord(const mlir::tblgen::AttrOrTypeDef &def) {
+    mlir::tblgen::Dialect defDialect = def.getDialect();
 
     // Generate for the selected dialect only
     if (defDialect.getName() != DialectName) {
       return;
     }
 
-    this->setDialectAndClassName(&defDialect, def.getCppClassName());
+    this->setNamespaceAndClassName(defDialect, def.getCppClassName());
 
     // Generate IsA check
     if (GenIsA) {
@@ -234,6 +234,7 @@ intptr_t {0}{2}_{3}Get{4}Count(Mlir{1} inp) {{
   virtual void genDefaultGetBuilderImpl(const mlir::tblgen::AttrOrTypeDef &def) const {
     static constexpr char fmt[] = R"(
 Mlir{1} {0}{2}_{3}Get(MlirContext ctx{4}) {{
+  {6}
   return wrap({3}::get(unwrap(ctx){5}));
 }
  )";
@@ -242,8 +243,10 @@ Mlir{1} {0}{2}_{3}Get(MlirContext ctx{4}) {{
     // Use raw_string_ostream for efficient string building
     std::string paramListBuffer;
     std::string argListBuffer;
+    std::string prefixBuffer;
     llvm::raw_string_ostream paramListStream(paramListBuffer);
     llvm::raw_string_ostream argListStream(argListBuffer);
+    llvm::raw_string_ostream prefixStream(prefixBuffer);
 
     for (const auto &param : def.getParameters()) {
       mlir::StringRef pName = param.getName();
@@ -252,15 +255,17 @@ Mlir{1} {0}{2}_{3}Get(MlirContext ctx{4}) {{
         // For ArrayRef parameters, convert from pointer + count to ArrayRef
         mlir::StringRef cppElemType = extractArrayRefElementType(cppType);
         std::string capiElemType = mapCppTypeToCapiType(cppElemType);
-        paramListStream << ", intptr_t " << pName << "Count, " << capiElemType << " *" << pName;
+        paramListStream << ", intptr_t " << pName << "Count, " << capiElemType << " const *"
+                        << pName;
 
         // In the call, we need to convert back to ArrayRef. Check if elements need unwrapping.
         if (isPrimitiveType(cppElemType)) {
-          argListStream << ", ::llvm::ArrayRef<" << capiElemType << ">(" << pName << ", " << pName
+          argListStream << ", ::llvm::ArrayRef<" << cppElemType << ">(" << pName << ", " << pName
                         << "Count)";
         } else {
-          argListStream << ", ::llvm::ArrayRef<" << capiElemType << ">(unwrapList(" << pName << ", "
-                        << pName << "Count))";
+          prefixStream << "SmallVector<Attribute> storage;";
+          argListStream << ", llvm::map_to_vector(unwrapList(" << pName << "Count, " << pName
+                        << ", storage), [](auto a) {return llvm::cast<RecordAttr>(a);})";
         }
       } else {
         std::string capiType = mapCppTypeToCapiType(cppType);
@@ -287,19 +292,20 @@ Mlir{1} {0}{2}_{3}Get(MlirContext ctx{4}) {{
         dialectNameCapitalized, // {2}
         className,              // {3}
         paramListBuffer,        // {4}
-        argListBuffer           // {5}
+        argListBuffer,          // {5}
+        prefixBuffer            // {6}
     );
   }
 
-  void genCompleteRecord(const mlir::tblgen::AttrOrTypeDef def) {
-    const mlir::tblgen::Dialect &defDialect = def.getDialect();
+  void genCompleteRecord(const mlir::tblgen::AttrOrTypeDef &def) {
+    mlir::tblgen::Dialect defDialect = def.getDialect();
 
     // Generate for the selected dialect only
     if (defDialect.getName() != DialectName) {
       return;
     }
 
-    this->setDialectAndClassName(&defDialect, def.getCppClassName());
+    this->setNamespaceAndClassName(defDialect, def.getCppClassName());
 
     // Generate IsA check implementation
     if (GenIsA) {
