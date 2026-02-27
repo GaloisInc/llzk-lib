@@ -633,9 +633,6 @@ static LogicalResult convertLeanModule(ModuleOp source, ModuleOp dest) {
   source.walk([&](mlir::func::FuncOp func) {
     convertFunction(func, func->hasAttr("function.allow_witness"), state);
   });
-  source.walk([&](llzk::function::FuncDefOp func) {
-    convertFunction(func, func.hasAllowWitnessAttr(), state);
-  });
 
   // Any struct without a converted constrain function gets stubs.
   for (auto &entry : structStates) {
